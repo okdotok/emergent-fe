@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,7 @@ export default function LoginPage({ onLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,9 +25,44 @@ export default function LoginPage({ onLogin }) {
         email,
         password,
       });
+      
+      // Log full response for debugging
+      console.log("🔐 Login response:", response);
+      console.log("🔐 Response data:", response.data);
+      
+      // Check if response data exists
+      if (!response.data) {
+        console.error("❌ No data in response:", response);
+        toast.error("Geen data ontvangen van server. Probeer het opnieuw.");
+        setLoading(false);
+        return;
+      }
+      
+      // Extract user and token from response
+      const userData = response.data.user || response.data;
+      const accessToken = response.data.access_token || response.data.token;
+      
+      if (!userData || !accessToken) {
+        console.error("❌ Missing user or token in response:", response.data);
+        toast.error("Ongeldige response van server. Probeer het opnieuw.");
+        setLoading(false);
+        return;
+      }
+      
+      // Call onLogin callback
+      onLogin(userData, accessToken);
+      
+      // Show success message
       toast.success("Succesvol ingelogd!");
-      onLogin(response.data.user, response.data.access_token);
+      
+      // Explicitly navigate to home page
+      setTimeout(() => {
+        navigate("/", { replace: true });
+      }, 100);
+      
     } catch (error) {
+      console.error("❌ Login error:", error);
+      console.error("❌ Error response:", error.response);
       toast.error(
         error.response?.data?.detail || "Inloggen mislukt. Controleer je gegevens."
       );

@@ -62,18 +62,29 @@ axios.interceptors.response.use(
       ? `${((Date.now() - response.config.metadata.startTime) / 1000).toFixed(3)}s`
       : 'unknown';
     
+    // Log full response data for debugging (especially for auth endpoints)
+    const isAuthEndpoint = response.config.url?.includes('/auth/');
+    const dataToLog = isAuthEndpoint 
+      ? response.data  // Log full data for auth endpoints
+      : (response.data ? (typeof response.data === 'string' 
+          ? response.data.substring(0, 200) 
+          : typeof response.data === 'object' 
+            ? JSON.stringify(response.data).substring(0, 200)
+            : response.data) : undefined);
+    
     console.log(`✅ [${timestamp}] API RESPONSE SUCCESS:`, {
       method: response.config.method.toUpperCase(),
       url: response.config.url,
       status: response.status,
       statusText: response.statusText,
       responseTime: requestTime,
-      data: response.data ? (typeof response.data === 'string' 
-        ? response.data.substring(0, 200) 
-        : typeof response.data === 'object' 
-          ? JSON.stringify(response.data).substring(0, 200)
-          : response.data) : undefined
+      data: dataToLog
     });
+    
+    // Additional detailed logging for auth endpoints
+    if (isAuthEndpoint && response.data) {
+      console.log(`🔐 [AUTH] Full response data:`, JSON.stringify(response.data, null, 2));
+    }
     
     return response;
   },
