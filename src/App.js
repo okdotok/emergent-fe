@@ -64,6 +64,19 @@ axios.interceptors.response.use(
     
     // Log full response data for debugging (especially for auth endpoints)
     const isAuthEndpoint = response.config.url?.includes('/auth/');
+    
+    // CRITICAL: Log the entire response object structure for debugging
+    console.log(`🔍 [${timestamp}] RAW RESPONSE OBJECT:`, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+      data: response.data,
+      dataType: typeof response.data,
+      dataIsNull: response.data === null,
+      dataIsUndefined: response.data === undefined,
+      fullResponse: response
+    });
+    
     const dataToLog = isAuthEndpoint 
       ? response.data  // Log full data for auth endpoints
       : (response.data ? (typeof response.data === 'string' 
@@ -82,8 +95,24 @@ axios.interceptors.response.use(
     });
     
     // Additional detailed logging for auth endpoints
-    if (isAuthEndpoint && response.data) {
-      console.log(`🔐 [AUTH] Full response data:`, JSON.stringify(response.data, null, 2));
+    if (isAuthEndpoint) {
+      console.log(`🔐 [AUTH] Response data check:`, {
+        hasData: !!response.data,
+        dataType: typeof response.data,
+        dataValue: response.data,
+        responseText: response.request?.responseText,
+        responseType: response.config?.responseType
+      });
+      
+      if (response.data) {
+        console.log(`🔐 [AUTH] Full response data:`, JSON.stringify(response.data, null, 2));
+      } else {
+        console.error(`❌ [AUTH] NO DATA IN RESPONSE!`, {
+          status: response.status,
+          headers: response.headers,
+          request: response.request
+        });
+      }
     }
     
     return response;
