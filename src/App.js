@@ -14,16 +14,101 @@ import { Toaster } from "./components/ui/sonner";
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-// Axios interceptor for auth token
+// Axios interceptor for auth token and request logging
 axios.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Log request
+    const timestamp = new Date().toISOString();
+    console.log(`📤 [${timestamp}] API REQUEST:`, {
+      method: config.method.toUpperCase(),
+      url: config.url,
+      baseURL: config.baseURL,
+      fullURL: `${config.baseURL || ''}${config.url}`,
+      headers: {
+        ...config.headers,
+        Authorization: config.headers.Authorization ? 'Bearer ***' : undefined
+      },
+      data: config.data ? (typeof config.data === 'string' ? config.data.substring(0, 200) : config.data) : undefined
+    });
+    
+    // Add request timestamp for response time calculation
+    config.metadata = { startTime: Date.now() };
+    
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    console.error('❌ [REQUEST ERROR]:', {
+      message: error.message,
+      config: error.config ? {
+        method: error.config.method,
+        url: error.config.url,
+        baseURL: error.config.baseURL
+      } : undefined
+    });
+    return Promise.reject(error);
+  }
+);
+
+// Axios interceptor for response logging
+axios.interceptors.response.use(
+  (response) => {
+    const timestamp = new Date().toISOString();
+    const requestTime = response.config.metadata?.startTime 
+      ? `${((Date.now() - response.config.metadata.startTime) / 1000).toFixed(3)}s`
+      : 'unknown';
+    
+    console.log(`✅ [${timestamp}] API RESPONSE SUCCESS:`, {
+      method: response.config.method.toUpperCase(),
+      url: response.config.url,
+      status: response.status,
+      statusText: response.statusText,
+      responseTime: requestTime,
+      data: response.data ? (typeof response.data === 'string' 
+        ? response.data.substring(0, 200) 
+        : typeof response.data === 'object' 
+          ? JSON.stringify(response.data).substring(0, 200)
+          : response.data) : undefined
+    });
+    
+    return response;
+  },
+  (error) => {
+    const timestamp = new Date().toISOString();
+    const requestTime = error.config?.metadata?.startTime 
+      ? `${((Date.now() - error.config.metadata.startTime) / 1000).toFixed(3)}s`
+      : 'unknown';
+    
+    console.error(`❌ [${timestamp}] API RESPONSE ERROR:`, {
+      method: error.config?.method?.toUpperCase() || 'UNKNOWN',
+      url: error.config?.url || 'UNKNOWN',
+      baseURL: error.config?.baseURL,
+      fullURL: error.config ? `${error.config.baseURL || ''}${error.config.url}` : 'UNKNOWN',
+      status: error.response?.status || 'NO_RESPONSE',
+      statusText: error.response?.statusText || 'NO_RESPONSE',
+      responseTime: requestTime,
+      errorMessage: error.message,
+      errorDetails: error.response?.data || error.message,
+      requestData: error.config?.data ? (typeof error.config.data === 'string' 
+        ? error.config.data.substring(0, 200) 
+        : error.config.data) : undefined
+    });
+    
+    // Log network errors separately
+    if (!error.response) {
+      console.error('🌐 NETWORK ERROR - No response from server:', {
+        message: error.message,
+        code: error.code,
+        url: error.config?.url
+      });
+    }
+    
+    return Promise.reject(error);
+  }
 );
 
 function App() {
