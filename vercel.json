@@ -2,6 +2,24 @@
   "buildCommand": "npm run build",
   "devCommand": "npm start",
   "installCommand": "npm install --legacy-peer-deps --force",
-  "framework": "create-react-app"
+  "framework": "create-react-app",
+  "outputDirectory": "build",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/static/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
 }
 
