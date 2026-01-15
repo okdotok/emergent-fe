@@ -5,9 +5,6 @@
   "outputDirectory": "build",
   "rewrites": [
     {
-      "handle": "filesystem"
-    },
-    {
       "src": "/(.*)",
       "dest": "/index.html"
     }
