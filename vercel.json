@@ -3,7 +3,7 @@
   "installCommand": "npm install --legacy-peer-deps --force",
   "framework": "create-react-app",
   "outputDirectory": "build",
-  "routes": [
+  "rewrites": [
     {
       "handle": "filesystem"
     },
